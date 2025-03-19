@@ -28,6 +28,10 @@ VGPT/
 │   │   └── crawler.py       # Web crawler for metadata extraction
 │   ├── main.py              # Main entry point
 │   └── metadata_extractor.py # Core metadata extraction logic
+├── tests/                   # Test scripts
+│   ├── test_n8n_integration.py # Tests for vector database integration
+│   ├── simulate_n8n_workflow.py # Simulation of n8n workflow
+│   └── run_all_tests.py    # Script to run all tests
 ├── .env.example             # Example environment variables
 ├── .gitignore               # Git ignore file
 └── requirements.txt         # Project dependencies
@@ -130,6 +134,34 @@ To integrate with N8N:
    }
    ```
 4. Add additional nodes to process and display the results
+
+## Testing
+
+The project includes comprehensive tests to ensure everything works correctly:
+
+### Test Vector Database Integration
+
+This test uploads sample datasets to the vector database, verifies they exist, and then removes them:
+
+```bash
+python -m tests.test_n8n_integration
+```
+
+### Simulate N8N Workflow
+
+This test simulates the N8N workflow by starting the API server and making requests:
+
+```bash
+python -m tests.simulate_n8n_workflow
+```
+
+### Run All Tests
+
+Run all tests in sequence:
+
+```bash
+python -m tests.run_all_tests
+```
 
 ## License
 
