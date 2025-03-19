@@ -1,0 +1,146 @@
+{
+  "name": "Virginia Dataset Search",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "search",
+        "options": {}
+      },
+      "id": "c1f090ba-4c76-4c6d-acd5-1cdac30d3c64",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "a8485d65-53f7-4d49-a598-74a28c27ad4e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract query parameter from webhook payload\nconst data = $input.all()[0].json;\n\n// Default to empty search if no query provided\nlet query = '';\nif (data && data.query) {\n  query = data.query;\n}\n\n// Default limit to 5 if not specified\nlet limit = 5;\nif (data && data.limit) {\n  limit = data.limit;\n}\n\nreturn [\n  {\n    json: {\n      query: query,\n      limit: limit\n    }\n  }\n];"
+      },
+      "id": "0c3de444-c2fe-4fde-8767-4a70209db697",
+      "name": "Process Webhook Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        490,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8000/search",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "5a2b9be9-1a07-4474-8c08-5983ecbe40a5",
+      "name": "VGPT API Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        730,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract results from API response\nconst response = $input.all()[0].json;\nconst results = response.body.results;\n\n// Format results for display\nconst formattedResults = results.ids.map((id, index) => {\n  const metadata = results.metadatas[index];\n  return {\n    id: id,\n    title: metadata.title,\n    description: metadata.description,\n    tags: metadata.tags,\n    organization: metadata.organization,\n    url: metadata.source_page,\n    similarity_score: results.distances[index]\n  };\n});\n\nreturn [\n  {\n    json: {\n      query: response.config.data.query,\n      results_count: formattedResults.length,\n      results: formattedResults\n    }\n  }\n];"
+      },
+      "id": "c4cf21d5-4dc1-4627-93ac-b4a08ed3fcfe",
+      "name": "Format Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        970,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "95e33cb3-3bda-494d-bf55-bd9d1a18ade7",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1210,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Webhook Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Webhook Input": {
+      "main": [
+        [
+          {
+            "node": "VGPT API Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VGPT API Request": {
+      "main": [
+        [
+          {
+            "node": "Format Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Results": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "name": "VGPT"
+    }
+  ],
+  "id": "123",
+  "active": false,
+  "versionId": "1",
+  "createdAt": "2023-04-18T15:36:59.747Z",
+  "updatedAt": "2023-04-18T16:23:46.646Z"
+} 
