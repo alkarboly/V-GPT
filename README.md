@@ -1,168 +1,216 @@
-# VGPT - Virginia Open Data Portal Metadata Extractor
+# VGPT - Vector Database Search for Custom Datasets
 
-This project extracts metadata from datasets on Virginia's Open Data Portal, generates embeddings using OpenAI's API, and stores them in a vector database for semantic search capabilities.
+VGPT provides a suite of tools for crawling data sources, creating vector embeddings, and searching through your custom data using natural language.
 
-## Features
+## Overview
 
-- Fetches metadata from Virginia's Open Data Portal using their CKAN API
-- Extracts key metadata including title, description, tags, and URLs
-- Generates embeddings using OpenAI's text-embedding-ada-002 model
-- Stores embeddings and metadata in ChromaDB for efficient similarity search
-- Provides semantic search functionality for finding related datasets
-- Includes a FastAPI server for easy integration with N8N.io workflows
-- Web crawler for scraping dataset metadata directly from the portal website
+The project consists of three main components:
+
+1. **Crawler**: Ethically crawls data sources to collect metadata, formats the data as both JSON and Markdown.
+
+2. **Embedder**: Processes the crawled data, generates text embeddings using OpenAI's API, and stores them in a Pinecone vector database.
+
+3. **Searcher**: Provides a semantic search interface using both the vector database and LLMs to answer natural language queries about your data.
+
+## Requirements
+
+- Python 3.7+
+- OpenAI API key
+- Pinecone API key
+- Required packages (install with `pip install -r requirements.txt`)
+
+## Installation
+
+1. Clone this repository:
+   ```
+   git clone https://github.com/yourusername/VGPT.git
+   cd VGPT
+   ```
+
+2. Create a virtual environment (recommended):
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+4. Create a `.env` file in the project root with your API keys and configuration:
+   ```
+   # Copy the example file
+   cp .env.example .env
+   
+   # Now edit the .env file with your API keys and configuration
+   ```
+
+## Configuration
+
+All configuration parameters can be set in the `.env` file. Key parameters include:
+
+- **API Keys**: `OPENAI_API_KEY`, `PINECONE_API_KEY`, `PINECONE_ENVIRONMENT`
+- **Data Source**: `DATA_SOURCE_URL`, `USER_AGENT` 
+- **Crawler Settings**: Rate limits, cache settings, etc.
+- **Directory Settings**: Where to store crawled data and cache
+- **Vector Database Settings**: Index name, namespace, embedding model, etc.
+- **Search Settings**: Chat model, number of results, etc.
+
+See `.env.example` for a complete list of configuration options.
+
+## Usage
+
+### 1. Crawl the Data Source
+
+```bash
+python -m vgpt.crawler [--pages N] [--output-dir PATH]
+```
+
+Options:
+- `--pages`: Number of pages to crawl (default from .env)
+- `--output-dir`: Directory to save crawled data (default from .env)
+- `--datasets-per-page`: Maximum datasets to process per page
+- `--no-cache`: Disable request caching
+
+#### Using the Batch Runner
+
+For large crawls, the batch runner allows you to process multiple batches with pauses between them:
+
+```bash
+python tests/crawler.py batch-runner [start-end] [batch_size] [pause_seconds]
+```
+
+Options:
+- `start-end`: Range of batches to process (e.g., "1-3" for batches 1, 2, and 3)
+- `batch_size`: Number of pages per batch (default: 10)
+- `pause_seconds`: Pause duration between batches (default: 10 seconds)
+
+Example to process batches 1 through 5 with 15-second pauses:
+```bash
+python tests/crawler.py batch-runner 1-5 10 15
+```
+
+#### Direct Page/Resource Processing
+
+- Process a specific page range:
+  ```bash
+  python tests/crawler.py 1-10
+  ```
+
+- Process a specific dataset/resource URL:
+  ```bash
+  python tests/crawler.py https://data.virginia.gov/dataset/example-dataset
+  ```
+
+#### Logging and Resumability
+
+The crawler implements comprehensive logging for tracking progress and resuming interrupted crawls:
+
+- **Log Files**:
+  - `crawler.log`: Main log file with detailed activity logging
+  - `data/datasets/all_dataset_urls.txt`: Master list of all discovered dataset URLs
+  - `data/datasets/dataset_urls_batch_{start}-{end}.txt`: URLs from each processed batch
+
+- **Progress Tracking**:
+  - Each batch logs statistics on completion (datasets processed, successful saves, preview tables)
+  - The system tracks when column information is successfully extracted
+  - Error logging includes detailed tracebacks for debugging
+
+- **Resumability**:
+  - To resume an interrupted crawl, check the last batch processed in logs or URL files
+  - Run the batch runner with a new start parameter picking up where you left off
+  - Example: `python tests/crawler.py batch-runner 4-10` to continue from batch 4
+
+- **Cache System**:
+  - The crawler uses persistent caching (in `data/cache/`)
+  - Cached requests are reused across runs, speeding up resumed crawls
+  - Significantly reduces server load during multi-session crawling
+
+The crawler will:
+- Respect server resources with proper rate limiting and caching
+- Extract detailed metadata about each dataset
+- Identify column names and data types when available
+- Save results as both JSON and Markdown files
+
+### 2. Generate and Store Vector Embeddings
+
+```bash
+python -m vgpt.embedder [--data-dir PATH] [--index-name NAME]
+```
+
+Options:
+- `--data-dir`: Directory containing dataset files (default from .env)
+- `--index-name`: Name of the vector index (default from .env)
+- `--batch-size`: Batch size for vector database uploads
+- `--embedding-model`: OpenAI embedding model to use
+- `--namespace`: Vector database namespace
+
+The embedder will:
+- Read the Markdown files generated by the crawler
+- Chunk the text appropriately for embedding
+- Generate embeddings using OpenAI's API
+- Store the embeddings in a vector database with metadata
+
+### 3. Search Data with Semantic Queries
+
+```bash
+python -m vgpt.searcher [--index-name NAME] [--query "your query here"]
+```
+
+Options:
+- `--index-name`: Name of the vector index (default from .env)
+- `--namespace`: Vector database namespace (default from .env)
+- `--embedding-model`: OpenAI embedding model (default from .env)
+- `--chat-model`: OpenAI chat model (default from .env)
+- `--top-k`: Number of results to return (default from .env)
+- `--query`: Run a single query (non-interactive mode)
+
+If no query is provided, the search tool runs in interactive mode, allowing you to:
+- Enter natural language queries
+- View search results in a formatted table
+- Get AI-generated responses based on the search results
+- Explore detailed information about each result
+
+## Why Markdown?
+
+The crawler saves dataset information as both JSON and Markdown files. The Markdown format is used for embedding because:
+
+1. **Structure**: Markdown provides enough structure to distinguish headers, sections, and formatting.
+2. **Readability**: It preserves the human-readable aspect of the data.
+3. **Embedding Quality**: Text processing models understand Markdown format well.
+4. **Simplicity**: It's a lightweight format that maintains important semantic information.
 
 ## Project Structure
 
 ```
 VGPT/
-├── data/                    # Data storage directory
-│   └── crawled/             # Crawled metadata storage
-├── docs/                    # Documentation
-├── public/                  # Public assets
-├── src/                     # Source code
-│   ├── api/                 # API endpoints
-│   │   └── endpoints.py     # FastAPI endpoints
-│   ├── data/                # Data handling utilities
-│   ├── utils/               # Utility functions
-│   │   └── crawler.py       # Web crawler for metadata extraction
-│   ├── main.py              # Main entry point
-│   └── metadata_extractor.py # Core metadata extraction logic
-├── tests/                   # Test scripts
-│   ├── test_n8n_integration.py # Tests for vector database integration
-│   ├── simulate_n8n_workflow.py # Simulation of n8n workflow
-│   └── run_all_tests.py    # Script to run all tests
-├── .env.example             # Example environment variables
-├── .gitignore               # Git ignore file
-└── requirements.txt         # Project dependencies
+├── vgpt/                    # Main package
+│   ├── __init__.py          # Package initialization
+│   ├── crawler.py           # Dataset crawler
+│   ├── embedder.py          # Embedding generation and storage
+│   └── searcher.py          # Search interface
+├── .env                     # Environment variables (API keys)
+├── .env.example             # Example environment file
+├── requirements.txt         # Project dependencies
+├── README.md                # This file
+└── data/                    # Data directory
+    ├── crawled_datasets/    # Crawler output
+    └── cache/               # Request cache
 ```
 
-## Prerequisites
+## Notes on API Usage
 
-- Python 3.8+
-- OpenAI API key
-- Virginia Open Data Portal API Token (optional if using web crawler)
-- ChromaDB (included in requirements)
+This project uses external APIs that require API keys and may have usage limits or costs:
+- **OpenAI API**: For generating embeddings and powering the search interface
+- **Pinecone API**: For storing and querying vector embeddings
 
-## Installation
+Please review the pricing and limits of these services before heavy usage.
 
-1. Clone this repository
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Copy `.env.example` to `.env` and fill in your API keys:
-   ```bash
-   cp .env.example .env
-   ```
+## Contributing
 
-## Configuration
-
-Edit the `.env` file with your API keys and settings:
-- `OPENAI_API_KEY`: Your OpenAI API key
-- `VIRGINIA_PORTAL_APP_TOKEN`: Your Virginia Open Data Portal API Token
-- `VIRGINIA_PORTAL_BASE_URL`: The base URL for the Virginia Open Data Portal
-- `CHROMA_PERSIST_DIRECTORY`: Directory where ChromaDB will store its data
-- `CRAWLER_START_PAGE`: Starting page number for the web crawler
-- `CRAWLER_END_PAGE`: Ending page number for the web crawler
-- `CRAWLER_DELAY`: Delay between requests in seconds
-
-### Getting a Virginia Open Data Portal API Token
-
-1. Visit the Virginia Open Data Portal: https://data.virginia.gov/
-2. Create an account or sign in to your existing account
-3. Go to your user profile (usually by clicking on your username in the top right)
-4. Navigate to "API Tokens" or "Developer Settings"
-5. Create a new API token
-6. Copy this token to your `.env` file as `VIRGINIA_PORTAL_APP_TOKEN`
-
-API authentication is done with the Authorization header as described in the [CKAN API documentation](https://docs.ckan.org/en/2.9/api/).
-
-## Usage
-
-### Extract Metadata Using API
-
-Run the metadata extraction pipeline using the CKAN API:
-```bash
-python -m src.main extract
-```
-
-### Crawl Website for Metadata
-
-If you want to extract metadata by crawling the website instead of using the API:
-```bash
-python -m src.main crawl --start-page 1 --end-page 10 --output ./data/crawled
-```
-
-### Generate Embeddings from Crawled Data
-
-After crawling the website, generate embeddings from the crawled metadata:
-```bash
-python -m src.main embed-crawled --input ./data/crawled
-```
-
-### Search Datasets
-
-Search for datasets using semantic search:
-```bash
-python -m src.main search "education funding data"
-```
-
-### Start API Server
-
-Start the FastAPI server for N8N integration:
-```bash
-python -m src.main api
-```
-
-The API will be available at http://localhost:8000 with documentation at http://localhost:8000/docs
-
-## N8N Integration
-
-To integrate with N8N:
-
-1. Create a new workflow in N8N
-2. Add an HTTP Request node to call the search endpoint
-3. Configure the node with:
-   - Method: POST
-   - URL: http://localhost:8000/search
-   - Body: JSON with query string
-   ```json
-   {
-     "query": "education funding data",
-     "limit": 5
-   }
-   ```
-4. Add additional nodes to process and display the results
-
-## Testing
-
-The project includes comprehensive tests to ensure everything works correctly:
-
-### Test Vector Database Integration
-
-This test uploads sample datasets to the vector database, verifies they exist, and then removes them:
-
-```bash
-python -m tests.test_n8n_integration
-```
-
-### Simulate N8N Workflow
-
-This test simulates the N8N workflow by starting the API server and making requests:
-
-```bash
-python -m tests.simulate_n8n_workflow
-```
-
-### Run All Tests
-
-Run all tests in sequence:
-
-```bash
-python -m tests.run_all_tests
-```
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT License 
+This project is licensed under the MIT License - see the LICENSE file for details. 

@@ -1,11 +1,27 @@
-requests==2.31.0
-pandas==2.1.0
-openai==1.3.0
-chromadb==0.4.15
-python-dotenv==1.0.0
-tqdm==4.66.1
-fastapi==0.104.1
-uvicorn==0.24.0
-pydantic==2.4.2
-beautifulsoup4==4.12.2
-pytest==7.4.0 
+# Core dependencies
+python-dotenv>=1.0.0
+requests>=2.31.0
+beautifulsoup4>=4.12.2
+pandas>=2.0.0
+tqdm>=4.66.1
+rich>=13.4.2
+python-dateutil>=2.8.2
+
+# Embedding and vector database
+openai>=1.3.0
+pinecone-client>=2.2.2
+
+# Web fetching and HTML parsing
+html5lib>=1.1
+lxml>=4.9.3
+
+# Data handling
+numpy>=1.24.0
+pyarrow>=13.0.0
+
+# Logging and CLI
+colorlog>=6.7.0
+argparse>=1.4.0
+
+# Optional testing
+pytest>=7.4.0 

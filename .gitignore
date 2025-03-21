@@ -29,8 +29,10 @@ venv/
 env/
 ENV/
 
-# Environment variables
+# Environment variables - ensure all environment files are excluded
 .env
+.env.*
+!.env.example
 
 # Database files
 /chroma_db/
@@ -49,7 +51,30 @@ ENV/
 # Logs
 logs/
 *.log
+crawler.log
 
 # OS specific
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Crawler data and cache
+data/cache/
+data/datasets/
+data/crawled_datasets/
+
+# Test output
+tests/output/
+
+# Vector database files
+**/chroma_db/
+**/pinecone_indexes/
+
+# Credentials and secrets
+*_credentials.json
+*_secret*
+secrets/
+credential*
+
+# API keys or configuration containing secrets
+api_keys.txt
+config.json 
