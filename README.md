@@ -1,216 +1,141 @@
-# VGPT - Vector Database Search for Custom Datasets
+# Virginia Data Portal - Knowledge Base Search & Chat
 
-VGPT provides a suite of tools for crawling data sources, creating vector embeddings, and searching through your custom data using natural language.
+This project provides tools to embed data from the Virginia Data Portal into a vector database (Pinecone) and perform semantic search and chat-based querying with an interactive web UI powered by GPT-4o.
 
-## Overview
+## Features
 
-The project consists of three main components:
+- **Data Embedding**: Process JSON data from Virginia Data Portal and store embeddings in Pinecone
+- **Semantic Search**: Search the embedded data using natural language queries
+- **Interactive Chat UI**: Web interface for querying Virginia data with context-aware responses
+- **Advanced Formatting**: Displays dataset information with proper formatting and links
+- **GPT-4o Integration**: Uses advanced language models for high-quality responses
 
-1. **Crawler**: Ethically crawls data sources to collect metadata, formats the data as both JSON and Markdown.
+## Setup
 
-2. **Embedder**: Processes the crawled data, generates text embeddings using OpenAI's API, and stores them in a Pinecone vector database.
+### Prerequisites
 
-3. **Searcher**: Provides a semantic search interface using both the vector database and LLMs to answer natural language queries about your data.
+- Python 3.8+ for the backend scripts
+- Node.js 14+ for the chat UI
+- Pinecone account for vector database
+- OpenAI API key for embeddings and chat
 
-## Requirements
+### Installation
 
-- Python 3.7+
-- OpenAI API key
-- Pinecone API key
-- Required packages (install with `pip install -r requirements.txt`)
+1. Clone the repository:
 
-## Installation
+```bash
+git clone https://github.com/yourusername/V-GPT.git
+cd V-GPT
+```
 
-1. Clone this repository:
-   ```
-   git clone https://github.com/yourusername/VGPT.git
-   cd VGPT
-   ```
+2. Install Python dependencies:
 
-2. Create a virtual environment (recommended):
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+```bash
+pip install openai pinecone-client python-dotenv tqdm flask cors
+```
 
-3. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+3. Install Node.js dependencies for the chat UI:
 
-4. Create a `.env` file in the project root with your API keys and configuration:
-   ```
-   # Copy the example file
-   cp .env.example .env
-   
-   # Now edit the .env file with your API keys and configuration
-   ```
+```bash
+cd public/chat-ui
+npm install
+```
 
-## Configuration
+4. Create a `.env` file in the root directory with your API keys:
 
-All configuration parameters can be set in the `.env` file. Key parameters include:
-
-- **API Keys**: `OPENAI_API_KEY`, `PINECONE_API_KEY`, `PINECONE_ENVIRONMENT`
-- **Data Source**: `DATA_SOURCE_URL`, `USER_AGENT` 
-- **Crawler Settings**: Rate limits, cache settings, etc.
-- **Directory Settings**: Where to store crawled data and cache
-- **Vector Database Settings**: Index name, namespace, embedding model, etc.
-- **Search Settings**: Chat model, number of results, etc.
-
-See `.env.example` for a complete list of configuration options.
+```
+OPENAI_API_KEY=your_openai_api_key
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_ENVIRONMENT=us-east-1-aws
+PINECONE_INDEX_NAME=virginia-data-portal
+EMBEDDING_MODEL=text-embedding-3-large
+CHAT_MODEL=gpt-4o
+```
 
 ## Usage
 
-### 1. Crawl the Data Source
+### 1. Embed Data
+
+Process JSON files and store embeddings in Pinecone:
 
 ```bash
-python -m vgpt.crawler [--pages N] [--output-dir PATH]
+python embed_json_files.py
 ```
 
-Options:
-- `--pages`: Number of pages to crawl (default from .env)
-- `--output-dir`: Directory to save crawled data (default from .env)
-- `--datasets-per-page`: Maximum datasets to process per page
-- `--no-cache`: Disable request caching
-
-#### Using the Batch Runner
-
-For large crawls, the batch runner allows you to process multiple batches with pauses between them:
+### 2. Start the Chat UI Server
 
 ```bash
-python tests/crawler.py batch-runner [start-end] [batch_size] [pause_seconds]
+cd public/chat-ui
+node server.js
 ```
 
-Options:
-- `start-end`: Range of batches to process (e.g., "1-3" for batches 1, 2, and 3)
-- `batch_size`: Number of pages per batch (default: 10)
-- `pause_seconds`: Pause duration between batches (default: 10 seconds)
+Then open your browser to `http://localhost:3000` to interact with the Virginia Data Portal Chat UI.
 
-Example to process batches 1 through 5 with 15-second pauses:
-```bash
-python tests/crawler.py batch-runner 1-5 10 15
-```
+### 3. Command Line Tools
 
-#### Direct Page/Resource Processing
-
-- Process a specific page range:
-  ```bash
-  python tests/crawler.py 1-10
-  ```
-
-- Process a specific dataset/resource URL:
-  ```bash
-  python tests/crawler.py https://data.virginia.gov/dataset/example-dataset
-  ```
-
-#### Logging and Resumability
-
-The crawler implements comprehensive logging for tracking progress and resuming interrupted crawls:
-
-- **Log Files**:
-  - `crawler.log`: Main log file with detailed activity logging
-  - `data/datasets/all_dataset_urls.txt`: Master list of all discovered dataset URLs
-  - `data/datasets/dataset_urls_batch_{start}-{end}.txt`: URLs from each processed batch
-
-- **Progress Tracking**:
-  - Each batch logs statistics on completion (datasets processed, successful saves, preview tables)
-  - The system tracks when column information is successfully extracted
-  - Error logging includes detailed tracebacks for debugging
-
-- **Resumability**:
-  - To resume an interrupted crawl, check the last batch processed in logs or URL files
-  - Run the batch runner with a new start parameter picking up where you left off
-  - Example: `python tests/crawler.py batch-runner 4-10` to continue from batch 4
-
-- **Cache System**:
-  - The crawler uses persistent caching (in `data/cache/`)
-  - Cached requests are reused across runs, speeding up resumed crawls
-  - Significantly reduces server load during multi-session crawling
-
-The crawler will:
-- Respect server resources with proper rate limiting and caching
-- Extract detailed metadata about each dataset
-- Identify column names and data types when available
-- Save results as both JSON and Markdown files
-
-### 2. Generate and Store Vector Embeddings
+#### Search JSON Data
 
 ```bash
-python -m vgpt.embedder [--data-dir PATH] [--index-name NAME]
+python search_json_data.py --query "your search query"
 ```
 
-Options:
-- `--data-dir`: Directory containing dataset files (default from .env)
-- `--index-name`: Name of the vector index (default from .env)
-- `--batch-size`: Batch size for vector database uploads
-- `--embedding-model`: OpenAI embedding model to use
-- `--namespace`: Vector database namespace
-
-The embedder will:
-- Read the Markdown files generated by the crawler
-- Chunk the text appropriately for embedding
-- Generate embeddings using OpenAI's API
-- Store the embeddings in a vector database with metadata
-
-### 3. Search Data with Semantic Queries
+#### Chat with Data (Terminal)
 
 ```bash
-python -m vgpt.searcher [--index-name NAME] [--query "your query here"]
+python chat_with_data.py
 ```
 
-Options:
-- `--index-name`: Name of the vector index (default from .env)
-- `--namespace`: Vector database namespace (default from .env)
-- `--embedding-model`: OpenAI embedding model (default from .env)
-- `--chat-model`: OpenAI chat model (default from .env)
-- `--top-k`: Number of results to return (default from .env)
-- `--query`: Run a single query (non-interactive mode)
+## Scripts Overview
 
-If no query is provided, the search tool runs in interactive mode, allowing you to:
-- Enter natural language queries
-- View search results in a formatted table
-- Get AI-generated responses based on the search results
-- Explore detailed information about each result
+### Backend Scripts
 
-## Why Markdown?
+- `embed_json_files.py`: Processes JSON data and creates embeddings in Pinecone
+- `search_json_data.py`: Command-line tool for semantic search
+- `chat_with_data.py`: Terminal-based interactive chat interface
 
-The crawler saves dataset information as both JSON and Markdown files. The Markdown format is used for embedding because:
+### Web Interface
 
-1. **Structure**: Markdown provides enough structure to distinguish headers, sections, and formatting.
-2. **Readability**: It preserves the human-readable aspect of the data.
-3. **Embedding Quality**: Text processing models understand Markdown format well.
-4. **Simplicity**: It's a lightweight format that maintains important semantic information.
+- `public/chat-ui/server.js`: Node.js server for the chat interface
+- `public/chat-ui/app.js`: Client-side JavaScript for the chat UI
+- `public/chat-ui/index.html`: HTML structure for the chat UI
+- `public/chat-ui/styles.css`: Styling for the chat interface
 
-## Project Structure
+## Advanced Options
 
-```
-VGPT/
-├── vgpt/                    # Main package
-│   ├── __init__.py          # Package initialization
-│   ├── crawler.py           # Dataset crawler
-│   ├── embedder.py          # Embedding generation and storage
-│   └── searcher.py          # Search interface
-├── .env                     # Environment variables (API keys)
-├── .env.example             # Example environment file
-├── requirements.txt         # Project dependencies
-├── README.md                # This file
-└── data/                    # Data directory
-    ├── crawled_datasets/    # Crawler output
-    └── cache/               # Request cache
-```
+### Embedding Options
 
-## Notes on API Usage
+- `--batch-size`: Number of items to process in one batch (default: 100)
+- `--chunk-size`: Maximum characters per text chunk (default: 1000)
 
-This project uses external APIs that require API keys and may have usage limits or costs:
-- **OpenAI API**: For generating embeddings and powering the search interface
-- **Pinecone API**: For storing and querying vector embeddings
+### Search Options
 
-Please review the pricing and limits of these services before heavy usage.
+- `--top-k`: Number of results to return (default: 5)
+- `--output`: Save search results to a file
 
-## Contributing
+### Chat Model Options
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- `--chat-model`: Specify which OpenAI model to use (default: gpt-4o)
+
+## Deployment
+
+For production deployment:
+
+1. Set up a proper web server (Nginx, Apache) to serve the static files
+2. Use a process manager like PM2 to keep the Node.js server running
+3. Consider containerizing the application with Docker for easier deployment
+
+## Troubleshooting
+
+- If you encounter context length errors, the system will automatically try to reduce context size
+- For Pinecone connection issues, check your API key and environment settings
+- Run diagnostics from the chat UI by clicking the server check button
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+[MIT License](LICENSE)
+
+## Acknowledgements
+
+- Virginia Data Portal for providing open data APIs
+- OpenAI for GPT models and embeddings
+- Pinecone for vector database services 

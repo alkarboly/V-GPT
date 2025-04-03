@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virginia Data Portal Chat</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Virginia Data Portal Chat</h1>
+            <div class="header-buttons">
+                <button id="checkIndexesButton" class="check-button" title="Check Server Connection">
+                    <i class="fas fa-server"></i>
+                </button>
+                <div class="settings-button" id="settingsButton">
+                    <i class="fas fa-cog"></i>
+                </div>
+            </div>
+        </header>
+
+        <div class="chat-container">
+            <div class="messages-container" id="messagesContainer">
+                <!-- Messages will be added here dynamically -->
+            </div>
+
+            <div class="input-container">
+                <textarea id="userInput" placeholder="Type your message here..." rows="1"></textarea>
+                <button id="sendButton" class="send-button">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="settings-modal" id="settingsModal">
+            <div class="settings-content">
+                <div class="settings-header">
+                    <h2>Settings</h2>
+                    <button class="close-button" id="closeSettings">&times;</button>
+                </div>
+                <div class="settings-body">
+                    <div class="toggle-group">
+                        <div class="feature-status">
+                            <span class="feature-title">Knowledge Base Status</span>
+                            <div class="status-badge enabled">
+                                <i class="fas fa-database"></i> ENABLED
+                            </div>
+                        </div>
+                        <p class="toggle-description">This chat interface uses the Virginia Data Portal knowledge base for more accurate and detailed responses.</p>
+                    </div>
+                    
+                    <div class="about-info">
+                        <h3>About</h3>
+                        <p>This chat interface connects to OpenAI's GPT-4o and your Pinecone embedded knowledge base to answer questions about Virginia data.</p>
+                        <p>The system is configured to always use the knowledge base for optimal results.</p>
+                    </div>
+                    
+                    <div class="settings-actions">
+                        <button id="closeSettings" class="primary-button">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 

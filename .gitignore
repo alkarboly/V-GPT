@@ -7,74 +7,104 @@ __pycache__/
 *.so
 
 # Distribution / packaging
-.Python
-build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+build/
 *.egg-info/
-.installed.cfg
-*.egg
 
 # Virtual environments
 venv/
 env/
 ENV/
+.env/
+.venv/
+pythonenv*
 
-# Environment variables - ensure all environment files are excluded
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+
+# Local development settings
 .env
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+logs/
+
+# Cache directories
+.pytest_cache/
+.coverage
+htmlcov/
+.eslintcache
+.parcel-cache
+.cache/
+
+# API Keys and sensitive data
 .env.*
 !.env.example
+*_credentials.json
+*_secret*
+secrets/
+credential*
+api_keys.txt
+config.json
+
+# Project specific
+data/json/
+data/cache/
+data/datasets/
+data/crawled_datasets/
 
 # Database files
 /chroma_db/
 *.sqlite
 *.db
+*.sqlite3
+*.db-journal
 
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# VS Code
-.vscode/
-
-# PyCharm
-.idea/
-
-# Logs
-logs/
-*.log
-crawler.log
-
 # OS specific
 .DS_Store
 Thumbs.db
-
-# Crawler data and cache
-data/cache/
-data/datasets/
-data/crawled_datasets/
-
-# Test output
-tests/output/
+*.tmp
+*.bak
+.*.swp
+*~
 
 # Vector database files
 **/chroma_db/
 **/pinecone_indexes/
 
-# Credentials and secrets
-*_credentials.json
-*_secret*
-secrets/
-credential*
+# Test output and coverage
+tests/output/
+coverage/
+.nyc_output
 
-# API keys or configuration containing secrets
-api_keys.txt
-config.json 
+# Build and compiled files
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.vercel
+
+# Temporary files
+tmp/
+temp/
+
+# Debug files
+debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log* 
