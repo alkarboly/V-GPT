@@ -109,11 +109,11 @@ async function initPinecone() {
             const index = pc.index(PINECONE_INDEX);
             const connectTime = Date.now() - connectStartTime;
             console.log(`✅ INIT: Index connection created in ${connectTime}ms`);
-            
-            // Test with a simple stats request
+        
+        // Test with a simple stats request
             console.log('📊 INIT: Getting index stats...');
             const statsStartTime = Date.now();
-            const stats = await index.describeIndexStats();
+        const stats = await index.describeIndexStats();
             const statsTime = Date.now() - statsStartTime;
             console.log(`✅ INIT: Got index stats in ${statsTime}ms`);
             console.log('✅ INIT: Index stats:', JSON.stringify(stats, null, 2));
@@ -126,15 +126,15 @@ async function initPinecone() {
                 topK: 1
             });
             console.log(`✅ INIT: Search test successful, found ${queryResponse.matches ? queryResponse.matches.length : 0} matches`);
-            
-            // Store the client and index
-            pinecone = pc;
-            pineconeIndex = index;
-            usePinecone = true;
+        
+        // Store the client and index
+        pinecone = pc;
+        pineconeIndex = index;
+        usePinecone = true;
             console.log('✅ INIT: Pinecone integration ENABLED');
-            
-            return true;
-        } catch (error) {
+        
+        return true;
+    } catch (error) {
             console.error('❌ INIT ERROR: Failed to connect to Pinecone index:', error);
             console.log('⚠️ INIT: Pinecone integration DISABLED');
             return false;
@@ -527,7 +527,7 @@ async function searchPinecone(embedding, topK = 8) {  // Increased from 5 to 8 f
             return fallbackResponse;
         } catch (fallbackError) {
             console.error('❌ PINECONE ERROR: Fallback query also failed:', fallbackError.message);
-            return { matches: [] };
+        return { matches: [] };
         }
     }
 }
@@ -678,9 +678,9 @@ Your goal is to provide the most accurate and specific information about Virgini
                     }
                     
                     // Try with gpt-4-turbo which has 128k context
-                    chatResponse = await openai.chat.completions.create({
+            chatResponse = await openai.chat.completions.create({
                         model: "gpt-4-turbo",
-                        messages: messages,
+                messages: messages,
                         temperature: 0.2,
                         max_tokens: 1500
                     });

@@ -13,6 +13,8 @@ const useEmbeddingsToggle = document.getElementById('useEmbeddingsToggle');
 let useEmbeddings = true;
 localStorage.setItem('useEmbeddings', 'true'); // Force it to true in storage
 
+console.log('Initializing application...');
+
 // Add a message to the chat
 function addMessage(content, sender, metadata) {
     const messageDiv = document.createElement('div');
@@ -97,6 +99,7 @@ function addMessage(content, sender, metadata) {
 // Check server connection
 async function checkServerStatus() {
     addMessage('Checking server connection...', 'system');
+    console.log('Checking server connection...');
     
     try {
         const response = await fetch('/api/diagnostics');
@@ -106,46 +109,58 @@ async function checkServerStatus() {
         }
         
         const data = await response.json();
+        console.log('Server diagnostics data:', data);
         
         // Build status message
         let statusMessage = '';
         
         if (data.openai) {
             statusMessage += '✅ Connected to OpenAI successfully\n';
+            console.log('Connected to OpenAI successfully');
             if (data.openaiModels) {
-                statusMessage += `Available models: ${data.openaiModels.join(', ')}\n\n`;
+                // statusMessage += `Available models: ${data.openaiModels.join(', ')}\n\n`;
+                console.log('Available OpenAI models:', data.openaiModels);
             }
         } else {
             statusMessage += '❌ Failed to connect to OpenAI: ' + (data.openaiError || 'Unknown error') + '\n\n';
+            console.error('Failed to connect to OpenAI:', data.openaiError || 'Unknown error');
         }
         
         if (data.usePinecone) {
             if (data.pinecone) {
                 statusMessage += '✅ Connected to Pinecone successfully\n';
+                console.log('Connected to Pinecone successfully');
                 
                 if (data.directConnectionSuccess) {
                     statusMessage += `✅ Successfully connected to index at ${data.pineconeIndexHost}\n`;
+                    console.log('Successfully connected to Pinecone index at', data.pineconeIndexHost);
                     if (data.indexStats) {
                         statusMessage += `Total vectors: ${data.indexStats.totalVectorCount || 'unknown'}\n`;
                         statusMessage += `Dimension: ${data.indexStats.dimension || 'unknown'}\n`;
+                        console.log('Pinecone index stats:', data.indexStats);
                     }
                 } else if (data.directConnectionError) {
                     statusMessage += `❌ Failed to connect to direct index: ${data.directConnectionError}\n`;
+                    console.error('Failed to connect to direct Pinecone index:', data.directConnectionError);
                 }
                 
                 if (data.pineconeIndexes && data.pineconeIndexes.length > 0) {
                     statusMessage += '\nAvailable indexes:\n';
                     data.pineconeIndexes.forEach(idx => {
                         statusMessage += `- ${idx.name}${idx.direct ? ' (direct)' : ''}\n`;
+                        console.log('Available Pinecone index:', idx.name);
                     });
                 } else {
                     statusMessage += 'No indexes found in your Pinecone account.\n';
+                    console.warn('No indexes found in Pinecone account');
                 }
             } else {
                 statusMessage += '❌ Failed to connect to Pinecone: ' + (data.pineconeError || 'Unknown error');
+                console.error('Failed to connect to Pinecone:', data.pineconeError || 'Unknown error');
             }
         } else {
             statusMessage += '⚠️ Pinecone integration is disabled. Only direct chat is available.';
+            console.warn('Pinecone integration is disabled');
         }
         
         addMessage(statusMessage, 'system');
@@ -203,7 +218,9 @@ async function fetchChatResponse(message) {
         // Prepare the request body - always use embeddings regardless of toggle state
         const requestBody = {
             query: message,
-            useEmbeddings: true // Always set to true to force using the vector db
+            useEmbeddings: true, // Always set to true to force using the vector db
+            systemPrompt: "You are a data scientist assistant specializing in Virginia data. Use the provided context to help users explore datasets, suggest relevant datasets for projects, and assist in building predictive models.",
+            requestType: "listDatasets" // Example request type, can be changed based on user input
         };
         
         console.log("Sending request with embeddings:", requestBody.useEmbeddings);
@@ -282,12 +299,32 @@ if (useEmbeddingsToggle) {
 }
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', () => {
-    // Show welcome message
-    addMessage('Welcome to the Virginia Data Portal Chat! Ask me about specific datasets, transportation statistics, education, healthcare, demographics, or any other Virginia government data.', 'system');
+// document.addEventListener('DOMContentLoaded', () => {
+//     // Show welcome message
+//     addMessage('Welcome to the Virginia Data Portal Chat! As your data scientist assistant, I am equipped to help you explore datasets from the Virginia Open Data Portal, suggest relevant datasets for your projects, and assist in building predictive models. Feel free to ask any questions related to data analysis, model building, or dataset exploration.', 'system');
     
-    // Check server status on load
-    setTimeout(() => {
-        checkServerStatus();
-    }, 1000);
-}); 
+//     // Check server status on load
+//     setTimeout(() => {
+//         checkServerStatus();
+//     }, 1000);
+// });
+
+function showExampleQuestions() {
+    const examples = `Here are some example questions you can ask:
+
+1. What datasets are available for bridges and roads?
+2. Can you suggest datasets for building a predictive model on traffic patterns?
+3. How can I use the datasets to analyze economic trends in Virginia?
+4. Can you help me find datasets related to environmental studies?
+5. What datasets are available for educational statistics in Virginia?
+6. What datasets have traffic records?
+7. What datasets have traffic accidents?
+8. What datasets have placemaking data?`;
+    addMessage(examples, 'system');
+}
+
+// Call the function to show example questions after checking server status
+setTimeout(() => {
+    checkServerStatus();
+    showExampleQuestions();
+}, 1000); 
